@@ -39,7 +39,7 @@ body {
 }
 
 .preloader h2 {
-  color: #fff;
+  color: #000;
   font-size: clamp(2rem, 5vw, 3rem);
   letter-spacing: clamp(5px, 2vw, 10px);
   animation: textReveal 1.5s ease-in-out;
@@ -91,10 +91,50 @@ section {
 }
 
 .header {
-  padding: 2rem 0;
   display: flex;
+  justify-content: justify-content;
   align-items: center;
-  gap: 2rem;
+  padding: 1rem;
+  color: var(--header-color);
+}
+
+.header-logo {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.header-icons {
+  display: flex;
+  gap: 1rem;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  color: var(--header-color);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.icon-button:hover {
+  transform: scale(1.1);
+}
+n
+.icon-button span {
+  font-size: 0.8rem;
+  color: var(--primary-color);
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  vertical-align: super;
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.icon-button:hover span {
+  color: var(--hover-color);
+  transform: scale(1.1);
 }
 
 .header h1 {
@@ -108,6 +148,16 @@ section {
 
 .header h1:hover {
   transform: scale(1.05);
+}
+
+.back-button {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--button-bg);
+  color: var(--button-color);
+  text-decoration: none;
+  border-radius: 5px;
 }
 
 form {
@@ -124,7 +174,7 @@ form:focus-within {
   transform: scale(1.02);
 }
 
-form svg {
+form .icon-button {
   position: absolute;
   right: 15px;
   font-size: 1.2rem;
@@ -132,7 +182,7 @@ form svg {
   transition: transform 0.3s ease, color 0.3s ease;
 }
 
-form:hover svg {
+form:hover .icon-button {
   transform: scale(1.1);
   color: --border-color;
 }
@@ -157,6 +207,10 @@ input::placeholder {
 }
 
 .no-results {
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 16px;
+  border: #0000001a;
   font-size: 1.5rem;
   color: #181818;
 }
@@ -204,7 +258,7 @@ input::placeholder {
   right: 0;
   padding: 1rem;
   background: linear-gradient(transparent, #000000cc);
-  color: white;
+  color: #fff;
   font-size: 1rem;
 }
 
@@ -212,9 +266,9 @@ input::placeholder {
   position: absolute !important;
   top: 1rem;
   right: 1rem;
-  width: 24px !important;
-  height: 24px !important;
-  background: white;
+  width: 28px !important;
+  height: 28px !important;
+  color: #fff;
   padding: 5px;
   border-radius: 50%;
   cursor: pointer;
@@ -222,6 +276,27 @@ input::placeholder {
 }
 
 .photo-download_info:hover {
+  transform: scale(1.1);
+}
+
+.favorite-btn {
+  position: absolute;
+  color: #fff;
+  top: 1rem;
+  right: 3rem;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 2px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.favorite-btn.favorited {
+  color: #cc184b;
+}
+
+.favorite-btn:hover {
   transform: scale(1.1);
 }
 
@@ -318,4 +393,9 @@ input::placeholder {
   color: white;
   transform: translateY(-2px);
   box-shadow: 0 2px 4px #0000001a;
+}
+
+.explore {
+  color: #4a87da;
+  cursor: pointer;
 }

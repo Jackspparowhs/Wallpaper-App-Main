@@ -5,21 +5,35 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import { FaSearch, FaRegMoon, FaRegSun } from "react-icons/fa";
+import {
+  FaSearch,
+  FaRegMoon,
+  FaRegSun,
+  FaHeart,
+  FaTrash,
+  FaDownload,
+} from "react-icons/fa";
 import "./App.css";
-import Download from "./assets/download.png";
+// import Download from "./assets/download.png";
+// import Heart from "./assets/heart.png";
 
 function App() {
   const API_KEY = "ndFZWMqcwlbe4uaEQAjp48nuA7t17Agu18kaGyieUpXK5UIDUEqsGVvl";
   const CACHE_DURATION = useMemo(() => 1000 * 60 * 60, []); // 1 hour cache
 
   const [images, setImages] = useState([]);
+  const [favorites, setFavorites] = useState(() => {
+    const savedFavorites = localStorage.getItem("favorites");
+    return savedFavorites ? JSON.parse(savedFavorites) : [];
+  });
+  const [favoriteCount, setFavoriteCount] = useState(favorites.length);
   const [pageIndex, setPageIndex] = useState(1);
   const [searchValueGlobal, setSearchValueGlobal] = useState("");
   const [loading, setLoading] = useState(false);
   const [noResults, setNoResults] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [showPreloader, setShowPreloader] = useState(true);
+  const [showFavorites, setShowFavorites] = useState(false);
   const [suggestions, setSuggestions] = useState(() => {
     const saved = localStorage.getItem("recentSearches");
     return saved
@@ -68,6 +82,7 @@ function App() {
 
         return data;
       } catch (error) {
+        console.error("API fetch error:", error);
         return { photos: [] };
       }
     },
@@ -162,7 +177,7 @@ function App() {
       return updated;
     });
 
-    e.target.reset();
+    e.target.querySelector("input").value = "";
   };
 
   const handleObserver = useCallback(
@@ -207,6 +222,7 @@ function App() {
     setSearchValueGlobal("");
     setNoResults(false);
     setHasMore(true);
+    setShowFavorites(false);
     getImages(1);
   };
 
@@ -215,8 +231,12 @@ function App() {
       const now = Date.now();
       Object.keys(localStorage).forEach((key) => {
         if (key.startsWith("image_cache_") || key.startsWith("search_")) {
-          const item = JSON.parse(localStorage.getItem(key));
-          if (now - item.timestamp > CACHE_DURATION) {
+          try {
+            const item = JSON.parse(localStorage.getItem(key));
+            if (now - item.timestamp > CACHE_DURATION) {
+              localStorage.removeItem(key);
+            }
+          } catch (e) {
             localStorage.removeItem(key);
           }
         }
@@ -240,7 +260,41 @@ function App() {
     localStorage.setItem("theme", newTheme);
   };
 
-  const handleDownload = async (url, photographerName) => {
+  const toggleFavorite = useCallback((e, photo) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setFavorites((prevFavorites) => {
+      const isFavorite = prevFavorites.some((fav) => fav.id === photo.id);
+      const updatedFavorites = isFavorite
+        ? prevFavorites.filter((fav) => fav.id !== photo.id)
+        : [...prevFavorites, photo];
+
+      // Update favorite count
+      setFavoriteCount(updatedFavorites.length);
+
+      localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
+      return updatedFavorites;
+    });
+  }, []);
+
+  const clearCache = () => {
+    Object.keys(localStorage).forEach((key) => {
+      if (
+        !key.startsWith("favorites") &&
+        !key.startsWith("theme") &&
+        !key.startsWith("recentSearches")
+      ) {
+        localStorage.removeItem(key);
+      }
+    });
+    alert("Cache cleared successfully!");
+  };
+
+  const handleDownload = useCallback(async (e, url, photographerName) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     try {
       const response = await fetch(url);
       const blob = await response.blob();
@@ -254,11 +308,19 @@ function App() {
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error("Download failed:", error);
+      alert("Download failed. Please try again.");
     }
-  };
+  }, []);
 
-  const GenerateHTML = useMemo(
-    () => (photos) =>
+  // Move this outside of GenerateHTML to avoid the unnecessary dependency
+  const isPhotoFavorited = useCallback(
+    (photoId) => favorites.some((fav) => fav.id === photoId),
+    [favorites]
+  );
+
+  // Create GenerateHTML with proper dependencies
+  const GenerateHTML = useCallback(
+    (photos) =>
       photos.map((photo, index) => (
         <div className="item" key={`${photo.id}-${index}`}>
           <a
@@ -271,21 +333,28 @@ function App() {
           </a>
           <a
             href="/"
-            onClick={(e) => {
-              e.preventDefault();
-              handleDownload(photo.src.original, photo.photographer);
-            }}
-            rel="noopener noreferrer"
+            className="download-btn"
+            onClick={(e) =>
+              handleDownload(e, photo.src.original, photo.photographer)
+            }
           >
-            <img
+            <FaDownload
               className="photo-download_info"
-              src={Download}
               alt="Download"
+            />
+          </a>
+          <a href="/">
+            <FaHeart
+              className={`favorite-btn ${
+                isPhotoFavorited(photo.id) ? "favorited" : ""
+              }`}
+              onClick={(e) => toggleFavorite(e, photo)}
+              alt="Like"
             />
           </a>
         </div>
       )),
-    []
+    [handleDownload, isPhotoFavorited, toggleFavorite]
   );
 
   return (
@@ -299,11 +368,36 @@ function App() {
         <div className="container">
           <header className="header">
             <h1 onClick={handleHeaderClick} style={{ cursor: "pointer" }}>
-              Art-Gallery
+              Art Gallery
             </h1>
-            <button onClick={toggleTheme} className="theme-toggle">
-              {theme === "dark" ? <FaRegSun /> : <FaRegMoon />}
-            </button>
+            <div className="header-icons">
+              <button
+                onClick={toggleTheme}
+                className="icon-button"
+                title={
+                  theme === "dark"
+                    ? "Switch to Light Mode"
+                    : "Switch to Dark Mode"
+                }
+              >
+                {theme === "dark" ? <FaRegSun /> : <FaRegMoon />}
+              </button>
+              <button
+                onClick={() => setShowFavorites(!showFavorites)}
+                className="icon-button"
+                title={showFavorites ? "Show All Images" : "Show Favorites"}
+              >
+                <FaHeart />
+                <span>{favoriteCount}</span>
+              </button>
+              <button
+                onClick={clearCache}
+                className="icon-button"
+                title="Clear Cache"
+              >
+                <FaTrash />
+              </button>
+            </div>
             <div className="search-container">
               <form onSubmit={handleSearch}>
                 <input
@@ -312,7 +406,9 @@ function App() {
                   id="search-input"
                   name="search"
                 />
-                <FaSearch />
+                <button type="submit" className="icon-button">
+                  <FaSearch />
+                </button>
               </form>
               <div className="suggestions-pills">
                 {suggestions.map((suggestion, index) => (
@@ -330,12 +426,22 @@ function App() {
           <div className="gallery">
             {noResults ? (
               <div className="no-results">No images found for your search.</div>
+            ) : showFavorites ? (
+              favorites.length > 0 ? (
+                GenerateHTML(favorites)
+              ) : (
+                <div className="no-results">
+                  No favorites yet. Go to{" "}
+                  <h1 className="explore" onClick={handleHeaderClick}>
+                    explore!
+                  </h1>{" "}
+                </div>
+              )
             ) : (
               GenerateHTML(images)
             )}
-            <div ref={loader} style={{ height: "50px" }}>
-              {loading && <div style={{ padding: "1rem" }}>Loading...</div>}
-            </div>
+            <div ref={loader} style={{ height: "50px" }}></div>
+            {loading && <div className="loading">Loading...</div>}
           </div>
         </div>
       </section>
