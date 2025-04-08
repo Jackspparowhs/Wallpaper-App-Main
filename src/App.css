@@ -39,7 +39,7 @@ body {
 }
 
 .preloader h2 {
-  color: #000;
+  color: var(--text-color);
   font-size: clamp(2rem, 5vw, 3rem);
   letter-spacing: clamp(5px, 2vw, 10px);
   animation: textReveal 1.5s ease-in-out;
@@ -119,21 +119,6 @@ section {
 }
 
 .icon-button:hover {
-  transform: scale(1.1);
-}
-n
-.icon-button span {
-  font-size: 0.8rem;
-  color: var(--primary-color);
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  vertical-align: super;
-  transition: color 0.3s ease, transform 0.3s ease;
-}
-
-.icon-button:hover span {
-  color: var(--hover-color);
   transform: scale(1.1);
 }
 
@@ -266,11 +251,10 @@ input::placeholder {
   position: absolute !important;
   top: 1rem;
   right: 1rem;
-  width: 28px !important;
-  height: 28px !important;
+  width: 24px !important;
+  height: 24px !important;
   color: #fff;
   padding: 5px;
-  border-radius: 50%;
   cursor: pointer;
   transition: transform 0.2s ease;
 }
@@ -284,10 +268,9 @@ input::placeholder {
   color: #fff;
   top: 1rem;
   right: 3rem;
-  width: 28px !important;
-  height: 28px !important;
+  width: 24px !important;
+  height: 24px !important;
   padding: 2px;
-  border-radius: 50%;
   cursor: pointer;
   transition: transform 0.2s ease, background-color 0.2s ease;
 }

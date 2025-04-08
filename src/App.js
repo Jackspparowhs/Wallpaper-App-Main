@@ -12,10 +12,9 @@ import {
   FaHeart,
   FaTrash,
   FaDownload,
+  FaGlobeAsia,
 } from "react-icons/fa";
 import "./App.css";
-// import Download from "./assets/download.png";
-// import Heart from "./assets/heart.png";
 
 function App() {
   const API_KEY = "ndFZWMqcwlbe4uaEQAjp48nuA7t17Agu18kaGyieUpXK5UIDUEqsGVvl";
@@ -288,7 +287,7 @@ function App() {
         localStorage.removeItem(key);
       }
     });
-    alert("Cache cleared successfully!");
+    alert("Cache cleared successfully!, but favorites and theme are safe.");
   };
 
   const handleDownload = useCallback(async (e, url, photographerName) => {
@@ -338,10 +337,7 @@ function App() {
               handleDownload(e, photo.src.original, photo.photographer)
             }
           >
-            <FaDownload
-              className="photo-download_info"
-              alt="Download"
-            />
+            <FaDownload className="photo-download_info" alt="Download" />
           </a>
           <a href="/">
             <FaHeart
@@ -386,9 +382,23 @@ function App() {
                 onClick={() => setShowFavorites(!showFavorites)}
                 className="icon-button"
                 title={showFavorites ? "Show All Images" : "Show Favorites"}
+                style={{ position: "relative" }}
               >
-                <FaHeart />
-                <span>{favoriteCount}</span>
+                {showFavorites ? <FaGlobeAsia /> : <FaHeart />}
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "-10px",
+                    right: "-10px",
+                    background: "#F16767",
+                    color: "white",
+                    borderRadius: "50%",
+                    padding: "2px 6px",
+                    fontSize: "12px",
+                  }}
+                >
+                  {favoriteCount}
+                </span>
               </button>
               <button
                 onClick={clearCache}
@@ -431,17 +441,21 @@ function App() {
                 GenerateHTML(favorites)
               ) : (
                 <div className="no-results">
-                  No favorites yet. Go to{" "}
+                  No favorites yet. Go to
                   <h1 className="explore" onClick={handleHeaderClick}>
                     explore!
-                  </h1>{" "}
+                  </h1>
                 </div>
               )
             ) : (
               GenerateHTML(images)
             )}
-            <div ref={loader} style={{ height: "50px" }}></div>
-            {loading && <div className="loading">Loading...</div>}
+            <div ref={loader} style={{ height: "1rem", padding: "1rem" }}></div>
+            {loading && (
+              <div className="loading">
+                <FaGlobeAsia /> Loading...
+              </div>
+            )}
           </div>
         </div>
       </section>
