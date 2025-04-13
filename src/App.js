@@ -317,7 +317,6 @@ function App() {
     [favorites]
   );
 
-  // Create GenerateHTML with proper dependencies
   const GenerateHTML = useCallback(
     (photos) =>
       photos.map((photo, index) => (
@@ -325,7 +324,7 @@ function App() {
           <a
             href={photo.src.original}
             data-lightbox="Art-Gallery"
-            data-title={photo.photographer}
+            data-title={`${photo.photographer} - ${photo.alt}`}
           >
             <img src={photo.src.large} alt={photo.photographer} />
             <h3>{photo.photographer}</h3>
