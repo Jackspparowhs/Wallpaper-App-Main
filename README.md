@@ -1,50 +1,32 @@
-# Art-Gallery - A Modern Wallpaper Web Application
+# Art-Gallery
+
+<img src="./images/art-gallery-light.png" />
 
 ## Overview
 Art-Gallery is a modern web application built with React.js that provides high-quality wallArt-Gallery using the Pexels API. The application offers:
 
-- 🖼️ High-quality wallpaper collection
-- 🔄 Regularly updated content
-- 🔍 Easy navigation system
-- 👥 User-friendly interface
+- High-quality wallpaper collection.
+- Regularly updated content.
+- Easy navigation system.
+- User-friendly interface.
 
 ## Features
 
-- 🔍 Smart Search with Recent Searches (persisted in localStorage)
-- 💾 Advanced Caching System (1-hour duration)
-- ⚡ Elegant Preloader Animation
-- 📱 Responsive Design with Modern UI
-- 🔄 Infinite Scroll with Intersection Observer
-- 🖼️ Lightbox Image Preview
-- ⬇️ Direct High-Resolution Image Download
-- 🎯 Search History Pills
-- 💪 Performance Optimizations with React Hooks
-
-## Recent Changes
-
-- Implemented advanced image caching system (1-hour duration)
-- Added search history pills with localStorage persistence
-- Enhanced infinite scroll using Intersection Observer
-- Optimized performance with useMemo and useCallback
-- Added elegant preloader animation
-- Improved error handling and loading states
-- Implemented direct high-resolution image downloads
-- Added "No Results" feedback for empty searches
-
-## Technical Details
-
-### Caching System
-- Images are cached in localStorage for 1 hour
-- Automatic cache cleanup for expired entries
-- Cache key format: `image_cache_${url}`
-
-### Search Features
-- Recent searches stored in localStorage
-- Up to 5 recent searches displayed as pills
-- Default suggestions: nature, abstract, minimal, dark
+- Smart Search with Recent Searches (persisted in localStorage).
+- Clear cache buttons.
+- Advanced Caching System (1-hour duration).
+- Elegant Preloader Animation.
+- Responsive Design with Modern UI.
+- Infinite Scroll with Intersection Observer.
+- Lightbox Image Preview.
+- Direct High-Resolution Image Download.
+- Search History Pills.
+- Suggustions in pills.
+- Performance Optimizations with React Hooks.
 
 ## Preview
-<img src="./images/sample-3.png" />
+<img src="./images/art-gallery-dark.png" />
+<img src="./images/art-gallery-like.png" width="50%" /><img src="./images/art-gallery-view.png" width="50%" />
 
 ## Installation
 

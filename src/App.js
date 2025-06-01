@@ -48,6 +48,7 @@ function App() {
         : "light")
     );
   });
+  const [selectedSuggestion, setSelectedSuggestion] = useState(null);
   const loader = useRef(null);
 
   const fetchImages = useCallback(
@@ -150,11 +151,10 @@ function App() {
   const handleSuggestionClick = (suggestion) => {
     setSearchValueGlobal(suggestion);
     getSearchedImages(suggestion);
+    setSelectedSuggestion(suggestion);
+
     setSuggestions((prev) => {
-      const updated = [
-        suggestion,
-        ...prev.filter((s) => s !== suggestion),
-      ].slice(0, 5);
+      const updated = [...prev];
       localStorage.setItem("recentSearches", JSON.stringify(updated));
       return updated;
     });
@@ -222,6 +222,7 @@ function App() {
     setNoResults(false);
     setHasMore(true);
     setShowFavorites(false);
+    setSelectedSuggestion(null);
     getImages(1);
   };
 
@@ -423,7 +424,9 @@ function App() {
                 {suggestions.map((suggestion, index) => (
                   <span
                     key={index}
-                    className="pill-item"
+                    className={`pill-item ${
+                      selectedSuggestion === suggestion ? "selected" : ""
+                    }`}
                     onClick={() => handleSuggestionClick(suggestion)}
                   >
                     {suggestion}
