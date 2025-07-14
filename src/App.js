@@ -6,14 +6,14 @@ import React, {
   useRef,
 } from "react";
 import {
-  FaSearch,
-  FaRegMoon,
-  FaRegSun,
-  FaHeart,
-  FaTrash,
-  FaDownload,
-  FaGlobeAsia,
-} from "react-icons/fa";
+  Search,
+  Moon,
+  Sun,
+  Heart,
+  Trash2,
+  Download,
+  Globe,
+} from "lucide-react";
 import "./App.css";
 
 function App() {
@@ -320,8 +320,8 @@ function App() {
 
   const GenerateHTML = useCallback(
     (photos) =>
-      photos.map((photo, index) => (
-        <div className="item" key={`${photo.id}-${index}`}>
+      photos.map((photo) => (
+        <div className="item" key={photo.id}>
           <a
             href={photo.src.original}
             data-lightbox="Art-Gallery"
@@ -337,10 +337,10 @@ function App() {
               handleDownload(e, photo.src.original, photo.photographer)
             }
           >
-            <FaDownload className="photo-download_info" alt="Download" />
+            <Download className="photo-download_info" alt="Download" />
           </a>
           <a href="/">
-            <FaHeart
+            <Heart
               className={`favorite-btn ${
                 isPhotoFavorited(photo.id) ? "favorited" : ""
               }`}
@@ -376,7 +376,7 @@ function App() {
                     : "Switch to Dark Mode"
                 }
               >
-                {theme === "dark" ? <FaRegSun /> : <FaRegMoon />}
+                {theme === "dark" ? <Sun /> : <Moon />}
               </button>
               <button
                 onClick={() => setShowFavorites(!showFavorites)}
@@ -384,7 +384,7 @@ function App() {
                 title={showFavorites ? "Show All Images" : "Show Favorites"}
                 style={{ position: "relative" }}
               >
-                {showFavorites ? <FaGlobeAsia /> : <FaHeart />}
+                {showFavorites ? <Globe /> : <Heart />}
                 <span
                   style={{
                     position: "absolute",
@@ -405,7 +405,7 @@ function App() {
                 className="icon-button"
                 title="Clear Cache"
               >
-                <FaTrash />
+                <Trash2 />
               </button>
             </div>
             <div className="search-container">
@@ -417,7 +417,7 @@ function App() {
                   name="search"
                 />
                 <button type="submit" className="icon-button">
-                  <FaSearch />
+                  <Search />
                 </button>
               </form>
               <div className="suggestions-pills">
@@ -455,7 +455,7 @@ function App() {
             <div ref={loader} style={{ height: "1rem", padding: "1rem" }}></div>
             {loading && (
               <div className="loading">
-                <FaGlobeAsia /> Loading...
+                <Globe /> Loading...
               </div>
             )}
           </div>
