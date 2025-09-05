@@ -186,14 +186,15 @@ input {
   border-radius: 12px;
   outline: none;
   transition: border-color 0.3s ease;
+  box-shadow: var(--border-color);
 }
 
 input:focus {
-  border-color: --border-color;
+  border-color: var(--border-color);
 }
 
 input::placeholder {
-  color: --border-color;
+  color: var(--border-color);
 }
 
 .no-results {
@@ -296,15 +297,15 @@ input::placeholder {
   padding: 5px;
   cursor: pointer;
   transition: all 0.2s ease;
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 50%;
+  background-color: #00000080;
+  border-radius: 30%;
   backdrop-filter: blur(2px);
 }
 
 .photo-download_info:hover {
   transform: scale(1.1);
-  background-color: rgba(0, 0, 0, 0.7);
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  background-color: #000000b3;
+  box-shadow: 0 0 10px #0000004d;
 }
 
 .favorite-btn {
@@ -317,15 +318,15 @@ input::placeholder {
   padding: 2px;
   cursor: pointer;
   transition: all 0.2s ease;
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 50%;
+  background-color: #00000080;
+  border-radius: 30%;
   backdrop-filter: blur(2px);
 }
 
 .favorite-btn.favorited {
   color: #ff4081;
-  background-color: rgba(0, 0, 0, 0.6);
-  box-shadow: 0 0 10px rgba(255, 64, 129, 0.3);
+  background-color: #00000099;
+  box-shadow: 0 0 10px #ff40814d;
 }
 
 .favorite-btn:hover {

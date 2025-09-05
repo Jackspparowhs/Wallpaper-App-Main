@@ -5,15 +5,10 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import {
-  Search,
-  Moon,
-  Sun,
-  Heart,
-  Trash2,
-  Download,
-  Globe,
-} from "lucide-react";
+import { IoSearch } from "react-icons/io5";
+import { FaMoon, FaSun, FaHeart, FaDownload, FaTrash } from "react-icons/fa";
+import { BsGlobeCentralSouthAsia } from "react-icons/bs";
+
 import "./App.css";
 
 function App() {
@@ -337,10 +332,10 @@ function App() {
               handleDownload(e, photo.src.original, photo.photographer)
             }
           >
-            <Download className="photo-download_info" alt="Download" />
+            <FaDownload className="photo-download_info" alt="Download" />
           </a>
           <a href="/">
-            <Heart
+            <FaHeart
               className={`favorite-btn ${
                 isPhotoFavorited(photo.id) ? "favorited" : ""
               }`}
@@ -376,7 +371,7 @@ function App() {
                     : "Switch to Dark Mode"
                 }
               >
-                {theme === "dark" ? <Sun /> : <Moon />}
+                {theme === "dark" ? <FaSun /> : <FaMoon />}
               </button>
               <button
                 onClick={() => setShowFavorites(!showFavorites)}
@@ -384,7 +379,7 @@ function App() {
                 title={showFavorites ? "Show All Images" : "Show Favorites"}
                 style={{ position: "relative" }}
               >
-                {showFavorites ? <Globe /> : <Heart />}
+                {showFavorites ? <BsGlobeCentralSouthAsia  /> : <FaHeart />}
                 <span
                   style={{
                     position: "absolute",
@@ -405,7 +400,7 @@ function App() {
                 className="icon-button"
                 title="Clear Cache"
               >
-                <Trash2 />
+                <FaTrash />
               </button>
             </div>
             <div className="search-container">
@@ -417,7 +412,7 @@ function App() {
                   name="search"
                 />
                 <button type="submit" className="icon-button">
-                  <Search />
+                  <IoSearch />
                 </button>
               </form>
               <div className="suggestions-pills">
@@ -455,7 +450,7 @@ function App() {
             <div ref={loader} style={{ height: "1rem", padding: "1rem" }}></div>
             {loading && (
               <div className="loading">
-                <Globe /> Loading...
+                <BsGlobeCentralSouthAsia  /> Loading...
               </div>
             )}
           </div>
