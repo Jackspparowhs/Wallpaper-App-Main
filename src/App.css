@@ -275,7 +275,14 @@ input::placeholder {
   display: block;
   /* border-radius: 12px; */
 }
-
+.item video {
+  width: 100%;
+  height: auto;
+  max-height: 400px; /* adjust height if you want */
+  border-radius: 10px;
+  object-fit: contain;
+  background-color: #000;
+}
 .item h3 {
   position: absolute;
   bottom: 0;
