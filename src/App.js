@@ -9,6 +9,7 @@ import { IoSearch } from "react-icons/io5";
 import { FaMoon, FaSun, FaHeart, FaDownload, FaBars, FaTimes } from "react-icons/fa";
 import { BsGlobeCentralSouthAsia } from "react-icons/bs";
 import "./App.css";
+import { Helmet } from "react-helmet";
 
 /**
  * Notes:
