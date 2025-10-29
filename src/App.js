@@ -11,9 +11,30 @@ import { BsGlobeCentralSouthAsia } from "react-icons/bs";
 import "./App.css";
 
 function App() {
-  // keep your API key
   const API_KEY = "ndFZWMqcwlbe4uaEQAjp48nuA7t17Agu18kaGyieUpXK5UIDUEqsGVvl";
   const CACHE_DURATION = useMemo(() => 1000 * 60 * 60, []); // 1 hour cache
+
+  // expanded categories list
+  const CATEGORIES = [
+    "Nature",
+    "Technology",
+    "Cars",
+    "People",
+    "Space",
+    "Food",
+    "Architecture",
+    "Travel",
+    "Animals",
+    "Mountains",
+    "Forest",
+    "Beaches",
+    "Cities",
+    "Abstract",
+    "Business",
+    "Fitness",
+    "Night",
+    "Macro",
+  ];
 
   const [media, setMedia] = useState([]); // photos + videos combined
   const [favorites, setFavorites] = useState(() => {
@@ -32,7 +53,7 @@ function App() {
     const saved = localStorage.getItem("recentSearches");
     return saved
       ? JSON.parse(saved)
-      : ["Nature", "Technology", "Cars", "People", "Space"];
+      : ["Nature", "Space", "Food", "Travel", "Architecture"];
   });
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -47,7 +68,17 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const loader = useRef(null);
 
-  // --- FETCH FUNCTIONS ---
+  // utility: shuffle array (Fisher-Yates)
+  const shuffleArray = useCallback((arr) => {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }, []);
+
+  // --- FETCH HELPERS ---
   const fetchData = useCallback(
     async (url) => {
       try {
@@ -69,6 +100,7 @@ function App() {
 
   const fetchPhotosAndVideos = useCallback(
     async (query, page = 1) => {
+      // per_page tuned to return a decent mixed set
       const photoURL = `https://api.pexels.com/v1/search?query=${encodeURIComponent(
         query
       )}&page=${page}&per_page=12`;
@@ -86,7 +118,7 @@ function App() {
           id: `photo-${p.id}`,
           type: "photo",
           photographer: p.photographer,
-          src: p.src, // contains original, large, etc.
+          src: p.src, // includes large, original etc.
         })) || [];
 
       const videos =
@@ -95,7 +127,6 @@ function App() {
           type: "video",
           photographer: v.user?.name || "Unknown",
           src: {
-            // poster thumbnail (video_pictures) and original video link (video_files)
             large: v.video_pictures?.[0]?.picture || "",
             original:
               v.video_files?.find((f) => f.quality === "hd")?.link ||
@@ -104,13 +135,13 @@ function App() {
           },
         })) || [];
 
-      // Mix photos & videos so they show together (videos after photos)
+      // return combined with photos first then videos
       return [...photos, ...videos];
     },
     [fetchData]
   );
 
-  // --- SEARCH + LOAD ---
+  // --- SEARCH + LOAD with shuffle + random page options ---
   const getSearchedMedia = useCallback(
     async (searchValue, index = 1, isAppending = false) => {
       setLoading(true);
@@ -118,7 +149,10 @@ function App() {
 
       const combinedResults = await fetchPhotosAndVideos(searchValue, index);
 
-      if (combinedResults.length === 0) {
+      // shuffle results to avoid identical ordering
+      const shuffled = shuffleArray(combinedResults);
+
+      if (shuffled.length === 0) {
         setNoResults(true);
         setHasMore(false);
       } else {
@@ -129,34 +163,45 @@ function App() {
         isAppending
           ? [
               ...new Map(
-                [...prev, ...combinedResults].map((m) => [m.id, m])
+                [...prev, ...shuffled].map((m) => [m.id, m])
               ).values(),
             ]
-          : combinedResults
+          : shuffled
       );
 
       setLoading(false);
     },
-    [fetchPhotosAndVideos]
+    [fetchPhotosAndVideos, shuffleArray]
   );
 
-  // --- INITIAL LOAD ---
+  // pick random integer in [min, max]
+  const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+  // --- INITIAL LOAD: random category & random page for variety ---
   useEffect(() => {
-    const timer = setTimeout(() => setShowPreloader(false), 1000);
-    getSearchedMedia("nature");
+    const timer = setTimeout(() => setShowPreloader(false), 900);
+    // pick random category and random page to vary results
+    const initialCategory = CATEGORIES[randInt(0, CATEGORIES.length - 1)];
+    const initialPage = randInt(1, 6); // choose page 1..6
+    setSearchValueGlobal(initialCategory);
+    getSearchedMedia(initialCategory, initialPage);
+    setSelectedSuggestion(initialCategory);
     return () => clearTimeout(timer);
-  }, [getSearchedMedia]);
+  }, [getSearchedMedia]); // only on mount
 
   // --- INFINITE SCROLL ---
   const handleObserver = useCallback(
     (entries) => {
       const target = entries[0];
       if (target.isIntersecting && !loading && hasMore) {
-        getSearchedMedia(searchValueGlobal || "nature", pageIndex + 1, true);
-        setPageIndex((prev) => prev + 1);
+        const nextPage = pageIndex + 1;
+        // use same query or fallback to random category
+        const query = searchValueGlobal || CATEGORIES[randInt(0, CATEGORIES.length - 1)];
+        getSearchedMedia(query, nextPage, true);
+        setPageIndex((p) => p + 1);
       }
     },
-    [loading, hasMore, getSearchedMedia, searchValueGlobal, pageIndex]
+    [loading, hasMore, getSearchedMedia, searchValueGlobal, pageIndex, CATEGORIES]
   );
 
   useEffect(() => {
@@ -196,7 +241,7 @@ function App() {
 
   const isFavorited = useCallback((id) => favorites.some((fav) => fav.id === id), [favorites]);
 
-  // --- DOWNLOAD ---
+  // --- DOWNLOAD (does NOT change global loading) ---
   const handleDownload = useCallback(async (e, url, name) => {
     e.preventDefault();
     e.stopPropagation();
@@ -205,12 +250,12 @@ function App() {
       return;
     }
     try {
+      // keep this operation local to the function so it doesn't show page loader
       const res = await fetch(url);
       const blob = await res.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
-      // determine extension
       const ext = url.split(".").pop().split("?")[0].slice(0, 4);
       link.download = `${name || "download"}-${Date.now()}.${ext}`;
       document.body.appendChild(link);
@@ -219,7 +264,7 @@ function App() {
       window.URL.revokeObjectURL(blobUrl);
     } catch (err) {
       console.error("Download failed:", err);
-      alert("Download failed. Try opening video/photo then download.");
+      alert("Download failed. Please try again.");
     }
   }, []);
 
@@ -227,7 +272,7 @@ function App() {
   const RenderMedia = useCallback(
     (items) =>
       items.map((item) => (
-        <div className="item" key={item.id} onClick={() => { /* optional: open viewer later */ }}>
+        <div className="item" key={item.id} onClick={() => { /* future lightbox viewer here */ }}>
           {item.type === "photo" ? (
             <img src={item.src.large} alt={item.photographer} loading="lazy" />
           ) : (
@@ -239,7 +284,7 @@ function App() {
                 preload="metadata"
               >
                 <source src={item.src.original} type="video/mp4" />
-                Your browser does not support the video tag.
+                Your browser does not support video.
               </video>
             </div>
           )}
@@ -280,18 +325,20 @@ function App() {
     const val = e.target.querySelector("input").value.trim();
     if (!val) return;
     setSearchValueGlobal(val);
-    getSearchedMedia(val);
+    // use random page on new searches to reduce repetition
+    const randPage = randInt(1, 6);
+    getSearchedMedia(val, randPage);
     // save to recent
     setSuggestions((prev) => {
-      const updated = [val, ...prev.filter((s) => s !== val)].slice(0, 6);
+      const updated = [val, ...prev.filter((s) => s !== val)].slice(0, 8);
       localStorage.setItem("recentSearches", JSON.stringify(updated));
       return updated;
     });
     e.target.querySelector("input").value = "";
-    setSidebarOpen(false); // close sidebar on mobile after searching
+    setSidebarOpen(false);
   };
 
-  // small utility: clear caches (not favorites/themes)
+  // simple cache clear (preserve favorites + theme)
   const clearCache = () => {
     Object.keys(localStorage).forEach((k) => {
       if (!k.startsWith("favorites") && !k.startsWith("theme") && !k.startsWith("recentSearches")) {
@@ -319,11 +366,15 @@ function App() {
           </div>
 
           <nav className="sidebar-nav">
-            <button className="nav-item" onClick={() => { getSearchedMedia("Nature"); setSidebarOpen(false); }}>Nature</button>
-            <button className="nav-item" onClick={() => { getSearchedMedia("Technology"); setSidebarOpen(false); }}>Technology</button>
-            <button className="nav-item" onClick={() => { getSearchedMedia("Cars"); setSidebarOpen(false); }}>Cars</button>
-            <button className="nav-item" onClick={() => { getSearchedMedia("People"); setSidebarOpen(false); }}>People</button>
-            <button className="nav-item" onClick={() => { getSearchedMedia("Space"); setSidebarOpen(false); }}>Space</button>
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                className="nav-item"
+                onClick={() => { getSearchedMedia(cat, randInt(1, 6)); setSidebarOpen(false); setSearchValueGlobal(cat); setSelectedSuggestion(cat); }}
+              >
+                {cat}
+              </button>
+            ))}
 
             <a className="nav-link" href="https://pirateruler.com" target="_blank" rel="noreferrer">PirateRuler.com</a>
           </nav>
@@ -374,14 +425,14 @@ function App() {
               </form>
 
               <div className="suggestions-pills">
-                {suggestions.map((s, i) => (
+                {suggestions.slice(0, 8).map((s, i) => (
                   <button
                     key={i}
                     className={`pill-item ${selectedSuggestion === s ? "selected" : ""}`}
                     onClick={() => {
                       setSelectedSuggestion(s);
                       setSearchValueGlobal(s);
-                      getSearchedMedia(s);
+                      getSearchedMedia(s, randInt(1,6));
                     }}
                   >
                     {s}
@@ -402,10 +453,10 @@ function App() {
         <section className="hero">
           <div className="hero-inner">
             <h2>Download stock photos & videos</h2>
-            <p>Over 10M+ free stock photos & videos (via Pexels & Pixabay). Search, preview and download.</p>
+            <p className="hero-desc">Over 10M+ free stock photos & videos (via Pexels & Pixabay). Search, preview and download — fresh results each visit.</p>
             <div className="hero-cta">
-              <button className="cta-btn" onClick={() => getSearchedMedia("popular")}>Explore Popular</button>
-              <button className="cta-cta" onClick={() => getSearchedMedia("trending")}>Trending</button>
+              <button className="cta-btn" onClick={() => getSearchedMedia("popular", randInt(1,6))}>Explore Popular</button>
+              <button className="cta-cta" onClick={() => getSearchedMedia("trending", randInt(1,6))}>Trending</button>
             </div>
           </div>
         </section>
