@@ -17,6 +17,7 @@ import { Helmet } from "react-helmet";
  * - Photo/video modal opens when clicking a card (shows details + big download).
  * - Sidebar scrolls and has a "More categories" collapse.
  * - Photo/Video filter toggles available in header.
+ * - Minimal URL routing added: /search/<term>
  */
 
 function App() {
@@ -76,6 +77,27 @@ function App() {
 
   const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
+  // --- URL routing helpers (minimal, no react-router) ---
+  const getTermFromPath = () => {
+    try {
+      const m = window.location.pathname.match(/^\/search\/(.+)$/);
+      return m ? decodeURIComponent(m[1]) : null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const pushSearchToUrl = (term) => {
+    try {
+      const newPath = `/search/${encodeURIComponent(term)}`;
+      if (window.location.pathname !== newPath) {
+        window.history.pushState({}, "", newPath);
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
   // --- fetch helpers ---
   const fetchData = useCallback(async (url) => {
     try {
@@ -117,28 +139,62 @@ function App() {
 
   // --- get media and manage state ---
   const getSearchedMedia = useCallback(async (searchValue, index = 1, isAppending = false) => {
+    if (!searchValue) return;
     setLoading(true);
     setNoResults(false);
-    const results = await fetchPhotosAndVideos(searchValue, index);
+    try {
+      const results = await fetchPhotosAndVideos(searchValue, index);
 
-    if (results.length === 0) {
+      if (results.length === 0) {
+        setNoResults(true);
+        setHasMore(false);
+      } else setHasMore(true);
+
+      setMedia(prev => isAppending ? [...new Map([...prev, ...results].map(m => [m.id, m])).values()] : results);
+    } catch (e) {
+      console.error("getSearchedMedia error", e);
       setNoResults(true);
-      setHasMore(false);
-    } else setHasMore(true);
-
-    setMedia(prev => isAppending ? [...new Map([...prev, ...results].map(m => [m.id, m])).values()] : results);
-    setLoading(false);
+    } finally {
+      setLoading(false);
+    }
   }, [fetchPhotosAndVideos]);
 
-  // initial load (prefer nature/space/forest)
+  // initial load (prefer nature/space/forest) — check URL first
   useEffect(() => {
     setShowPreloader(false);
+    const termFromPath = getTermFromPath();
+    if (termFromPath) {
+      setSearchValueGlobal(termFromPath);
+      setPageIndex(1);
+      getSearchedMedia(termFromPath, 1);
+      return;
+    }
     const initialCats = ["Nature", "Space", "Forest"];
     const pick = initialCats[randInt(0, initialCats.length - 1)];
     const page = randomizeOnLoad ? randInt(1, 5) : 1;
     setSearchValueGlobal(pick);
     setTimeout(() => getSearchedMedia(pick, page), 150); // small delay so UI mounts first
   }, [getSearchedMedia, randomizeOnLoad]);
+
+  // React to browser back/forward
+  useEffect(() => {
+    const onPop = () => {
+      const term = getTermFromPath();
+      if (term) {
+        setSearchValueGlobal(term);
+        setPageIndex(1);
+        getSearchedMedia(term, 1);
+      } else {
+        // optional: fallback to default category when no /search/ path
+        const q = "Nature";
+        setSearchValueGlobal(q);
+        setPageIndex(1);
+        getSearchedMedia(q, 1);
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [getSearchedMedia]);
 
   // infinite scroll
   const handleObserver = useCallback((entries) => {
@@ -234,11 +290,23 @@ function App() {
     ));
   }, [filterMode, handleDownload, isFavorited, toggleFavorite]);
 
-  // search handling
+  // helper used by categories & pills — opens category and pushes URL
+  const openCategory = useCallback((cat) => {
+    if (!cat) return;
+    pushSearchToUrl(cat);
+    setSearchValueGlobal(cat);
+    setPageIndex(1);
+    setShowFavorites(false);
+    getSearchedMedia(cat, randInt(1,5));
+    setSidebarOpen(false);
+  }, [getSearchedMedia]);
+
+  // search handling (updated: push URL)
   const handleSearch = (e) => {
     e.preventDefault();
     const q = e.target.querySelector("input").value.trim();
     if (!q) return;
+    pushSearchToUrl(q);
     setSearchValueGlobal(q);
     setPageIndex(1);
     setShowFavorites(false);
@@ -303,7 +371,7 @@ function App() {
           <nav className="sidebar-nav">
             <div className="cat-grid">
               {PRIMARY_CATEGORIES.map(cat => (
-                <button key={cat} className="nav-item" onClick={() => { setSearchValueGlobal(cat); getSearchedMedia(cat, randInt(1,5)); setSidebarOpen(false); }}>
+                <button key={cat} className="nav-item" onClick={() => openCategory(cat)}>
                   {cat}
                 </button>
               ))}
@@ -314,7 +382,7 @@ function App() {
               {showMoreCats && (
                 <div className="more-list">
                   {MORE_CATEGORIES.map(cat => (
-                    <button key={cat} className="nav-item" onClick={() => { setSearchValueGlobal(cat); getSearchedMedia(cat, randInt(1,5)); setSidebarOpen(false); }}>
+                    <button key={cat} className="nav-item" onClick={() => openCategory(cat)}>
                       {cat}
                     </button>
                   ))}
@@ -346,7 +414,7 @@ function App() {
       <header className="header">
         <div className="left">
           <button className="hamburger" onClick={() => setSidebarOpen(true)} aria-label="Open menu"><FaBars /></button>
-          <h1 className="brand" onClick={() => { setShowFavorites(false); const q = "Nature"; setSearchValueGlobal(q); getSearchedMedia(q, randInt(1,5)); }}>
+          <h1 className="brand" onClick={() => { setShowFavorites(false); const q = "Nature"; setSearchValueGlobal(q); pushSearchToUrl(q); getSearchedMedia(q, randInt(1,5)); }}>
             Stocks by <a href="https://pirateruler.com" target="_blank" rel="noreferrer">PirateRuler.com</a>
           </h1>
         </div>
@@ -374,12 +442,12 @@ function App() {
           <p className="hero-desc">Over 20M+ free stock photos & videos (via Pexels & Pixabay). Search, preview and download — fresh results each visit.</p>
 
           <div className="hero-ctas">
-            <button className="cta primary" onClick={() => { const q = "Nature"; setSearchValueGlobal(q); getSearchedMedia(q, randInt(1,5)); }}>Explore Popular</button>
-            <button className="cta" onClick={() => { const q = "Trending"; setSearchValueGlobal(q); getSearchedMedia(q, randInt(1,5)); }}>Trending</button>
+            <button className="cta primary" onClick={() => openCategory("Nature")}>Explore Popular</button>
+            <button className="cta" onClick={() => openCategory("Trending")}>Trending</button>
           </div>
 
           <div className="hero-pills">
-            {PRIMARY_CATEGORIES.map(cat => <button key={cat} className="pill" onClick={() => { setSearchValueGlobal(cat); getSearchedMedia(cat, randInt(1,5)); }}>{cat}</button>)}
+            {PRIMARY_CATEGORIES.map(cat => <button key={cat} className="pill" onClick={() => openCategory(cat)}>{cat}</button>)}
           </div>
         </div>
       </section>
