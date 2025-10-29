@@ -391,6 +391,22 @@ function App() {
             </div>
 
             <a href="https://pirateruler.com" target="_blank" rel="noreferrer" className="pirateruler-link">PirateRuler.com</a>
+
+<hr style={{ margin: "12px 0", borderColor: "#444" }} />
+
+<div className="sidebar-legal">
+  <h4 style={{ marginBottom: "8px" }}>Info & Legal</h4>
+  <p style={{ fontSize: "13px", color: "#aaa", lineHeight: "1.5" }}>
+    <strong>About:</strong> PirateRuler provides free stock photos and videos powered by the Pexels API.
+    All content is royalty-free and safe for personal or commercial use.
+  </p>
+  <p style={{ fontSize: "13px", color: "#aaa", marginTop: "8px" }}>
+    <strong>Privacy Policy:</strong> We do not collect or store user data. Third-party APIs may use cookies for analytics.
+  </p>
+  <p style={{ fontSize: "13px", color: "#aaa", marginTop: "8px" }}>
+    <strong>Disclaimer:</strong> All media are fetched from Pexels under their license. PirateRuler does not own or host copyrighted content.
+  </p>
+</div>
           </nav>
 
           <div className="sidebar-controls">
