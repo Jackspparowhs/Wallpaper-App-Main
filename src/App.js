@@ -338,10 +338,7 @@ function App() {
           </div>
         </div>
 
-        <div className="right">
-          <button className="icon" title="Favorites" onClick={() => setShowFavorites(s => !s)}><FaHeart /><span className="fav-count">{favoriteCount}</span></button>
-          <button className="icon" title="Theme" onClick={toggleTheme}>{theme === "light" ? <FaMoon /> : <FaSun />}</button>
-        </div>
+        {/* Right header icons removed - favorites & theme are only in sidebar now */}
       </header>
 
       {/* hero */}
