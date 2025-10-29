@@ -345,7 +345,7 @@ function App() {
       <section className="hero">
         <div className="hero-inner">
           <h2>Download stock photos & videos</h2>
-          <p className="hero-desc">Over 10M+ free stock photos & videos (via Pexels & Pixabay). Search, preview and download — fresh results each visit.</p>
+          <p className="hero-desc">Over 20M+ free stock photos & videos (via Pexels & Pixabay). Search, preview and download — fresh results each visit.</p>
 
           <div className="hero-ctas">
             <button className="cta primary" onClick={() => { const q = "Nature"; setSearchValueGlobal(q); getSearchedMedia(q, randInt(1,5)); }}>Explore Popular</button>
