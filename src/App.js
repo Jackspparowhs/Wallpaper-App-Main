@@ -328,40 +328,6 @@ function App() {
             {loading && (
               <div className="loading">
                 <BsGlobeCentralSouthAsia /> Loading...
-              const GenerateHTML = useCallback(
-  (photos) =>
-    photos.map((photo) => (
-      <div className="item" key={photo.id}>
-        <a
-          href={photo.src.original}
-          data-lightbox="Art-Gallery"
-          data-title={`${photo.photographer} - ${photo.alt}`}
-        >
-          <img src={photo.src.large} alt={photo.photographer} />
-          <h3>{photo.photographer}</h3>
-        </a>
-        <a
-          href="/"
-          className="download-btn"
-          onClick={(e) =>
-            handleDownload(e, photo.src.original, photo.photographer)
-          }
-        >
-          <FaDownload className="photo-download_info" alt="Download" />
-        </a>
-        <a href="/">
-          <FaHeart
-            className={`favorite-btn ${
-              isPhotoFavorited(photo.id) ? "favorited" : ""
-            }`}
-            onClick={(e) => toggleFavorite(e, photo)}
-            alt="Like"
-          />
-        </a>
-      </div>
-    )),
-  [handleDownload, isPhotoFavorited, toggleFavorite]
-);
               </div>
             )}
           </div>
