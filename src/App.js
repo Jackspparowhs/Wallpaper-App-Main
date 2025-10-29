@@ -259,8 +259,33 @@ function App() {
     alert("Cache cleared (favorites & theme preserved).");
   };
 
+  // encode URL for og:url
+  const ogUrl = `https://stock.pirateruler.com/search/${encodeURIComponent(searchValueGlobal || "home")}`;
+
   return (
     <>
+      {/* SEO / Open Graph meta tags via Helmet */}
+      <Helmet>
+        <title>
+          {searchValueGlobal
+            ? `${searchValueGlobal} Free Stock Photos & Videos | PirateRuler`
+            : "Free Stock Photos & Videos | PirateRuler"}
+        </title>
+        <meta
+          name="description"
+          content={
+            searchValueGlobal
+              ? `Download high-quality ${searchValueGlobal} stock photos and videos — free and royalty-free from PirateRuler.`
+              : "Download millions of free stock photos & videos. Explore Nature, Space, Travel, Japan and more on PirateRuler."
+          }
+        />
+        <meta name="keywords" content={`${searchValueGlobal}, stock photos, stock videos, free downloads, PirateRuler`} />
+        <meta property="og:title" content={`Stock photos & videos: ${searchValueGlobal || "PirateRuler"}`} />
+        <meta property="og:description" content="Free stock photos & videos by PirateRuler — download and use anywhere!" />
+        <meta property="og:image" content="%PUBLIC_URL%/logo512.png" />
+        <meta property="og:url" content={ogUrl} />
+      </Helmet>
+
       {/* Sidebar overlay */}
       <div className={`overlay ${sidebarOpen ? "show" : ""}`} onClick={() => setSidebarOpen(false)} />
 
