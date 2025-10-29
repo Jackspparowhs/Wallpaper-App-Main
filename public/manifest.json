@@ -1,6 +1,6 @@
 {
-    "name": "Wallpaper App",
-    "short_name": "Wallpaper",
+    "name": "Stock Images & Videos",
+    "short_name": "Pirate Ruler",
     "start_url": "/",
     "display": "standalone",
     "theme_color": "#ffffff",
