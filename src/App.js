@@ -478,23 +478,40 @@ function App() {
       </main>
 
       {/* SMALL static footer (non-sticky). Appears when user reaches bottom. */}
-      <footer className="site-footer" style={{
-        padding: "8px 0",
-        borderTop: "1px solid rgba(255,255,255,0.03)",
-        marginTop: 24,
-        background: "transparent"
-      }}>
-        <div className="container footer-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, fontSize: 13 }}>
-          <div style={{ color: "var(--muted-color, #9fb)" }}>© {new Date().getFullYear()} PirateRuler</div>
-          <div className="footer-links" style={{ color: "var(--muted-color, #9fb)" }}>
-            <a href="https://pirateruler.com" style={{ marginRight: 10, color: "inherit" }}>Main</a>
-            <a href="https://www.pirateruler.com/post/about.html" target="_blank" rel="noreferrer" style={{ marginRight: 10, color: "inherit" }}>About</a>
-            <a href="https://www.pirateruler.com/post/privacy.html" target="_blank" rel="noreferrer" style={{ marginRight: 10, color: "inherit" }}>Privacy</a>
-            <a href="https://www.pirateruler.com/post/contact.html" target="_blank" rel="noreferrer" style={{ marginRight: 10, color: "inherit" }}>Contact</a>
-            <a href="https://www.pirateruler.com/post/terms.html" target="_blank" rel="noreferrer" style={{ color: "inherit" }}>Terms</a>
-          </div>
-        </div>
-      </footer>
+      <footer
+  className="site-footer"
+  style={{
+    marginTop: "auto",
+    padding: "6px 0",
+    fontSize: "13px",
+    borderTop: "1px solid rgba(255,255,255,0.05)",
+    background: "transparent",
+    color: "#9fb",
+    position: "relative",
+    bottom: 0,
+    width: "100%",
+  }}
+>
+  <div
+    className="footer-inner"
+    style={{
+      textAlign: "center",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: "4px",
+    }}
+  >
+    <div style={{ fontSize: "12px", color: "#8fa" }}>© {new Date().getFullYear()} PirateRuler</div>
+    <div className="footer-links" style={{ fontSize: "13px", color: "#bcd" }}>
+      <a href="https://pirateruler.com" style={{ marginRight: 10, color: "#bcd" }}>Main</a>
+      <a href="https://www.pirateruler.com/post/about.html" target="_blank" rel="noreferrer" style={{ marginRight: 10 }}>About</a>
+      <a href="https://www.pirateruler.com/post/privacy.html" target="_blank" rel="noreferrer" style={{ marginRight: 10 }}>Privacy</a>
+      <a href="https://www.pirateruler.com/post/contact.html" target="_blank" rel="noreferrer" style={{ marginRight: 10 }}>Contact</a>
+      <a href="https://www.pirateruler.com/post/terms.html" target="_blank" rel="noreferrer">Terms</a>
+    </div>
+  </div>
+</footer>
 
       {/* modal */}
       {modalItem && (
