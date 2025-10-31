@@ -486,11 +486,17 @@ function App() {
 
       {/* footer */}
       <footer className="site-footer">
-        <div className="container footer-inner">
-          <div>Powered by PirateRuler</div>
-          <div className="footer-links"><a href="https://pirateruler.com">Main</a> • <a href="https://pexels.com">Pexels</a></div>
-        </div>
-      </footer>
+  <div className="container footer-inner">
+    <div>Powered by <a href="https://pirateruler.com">PirateRuler</a></div>
+    <div className="footer-links">
+      <a href="https://pirateruler.com">Main</a> •
+      <a href="https://www.pirateruler.com/post/about.html">About</a> •
+      <a href="https://www.pirateruler.com/post/privacy.html">Privacy</a> •
+      <a href="https://www.pirateruler.com/post/contact.html">Contact</a> •
+      <a href="https://www.pirateruler.com/post/terms.html">Terms</a>
+    </div>
+  </div>
+</footer>
 
       {/* modal */}
       {modalItem && (
