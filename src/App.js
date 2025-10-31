@@ -11,14 +11,15 @@ import { BsGlobeCentralSouthAsia } from "react-icons/bs";
 import "./App.css";
 
 /**
- * ✅ Normal footer version (not sticky)
- * ✅ Keeps About, Privacy, Contact, Terms links
- * ✅ Works perfectly for all sites
+ * Notes:
+ * - Removed react-helmet dependency (not installed on server) to avoid build failures.
+ * - Document meta/title are set via useEffect below.
+ * - Footer is SMALL and STATIC (not sticky). Appears normally at page bottom.
  */
 
 function App() {
   const API_KEY = "ndFZWMqcwlbe4uaEQAjp48nuA7t17Agu18kaGyieUpXK5UIDUEqsGVvl";
-  const CACHE_DURATION = useMemo(() => 1000 * 60 * 60, []); // 1 hour
+  const CACHE_DURATION = useMemo(() => 1000 * 60 * 60, []); // 1 hour cache
 
   const PRIMARY_CATEGORIES = ["Nature", "Space", "Forest", "Travel", "Animals", "Food"];
   const MORE_CATEGORIES = [
@@ -37,6 +38,7 @@ function App() {
     "Sports",
   ];
 
+  // state
   const [media, setMedia] = useState([]);
   const [favorites, setFavorites] = useState(() => JSON.parse(localStorage.getItem("favorites") || "[]"));
   const [favoriteCount, setFavoriteCount] = useState(favorites.length);
@@ -45,16 +47,19 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [noResults, setNoResults] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [showPreloader, setShowPreloader] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [suggestions, setSuggestions] = useState(() => JSON.parse(localStorage.getItem("recentSearches") || '["Nature","Space","Travel","Animals"]'));
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showMoreCats, setShowMoreCats] = useState(false);
   const [filterMode, setFilterMode] = useState("all");
   const [modalItem, setModalItem] = useState(null);
+  const [randomizeOnLoad] = useState(true);
 
   const loader = useRef(null);
 
-  // Shuffle helper
+  // helper: shuffle array
   const shuffleArray = (arr) => {
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) {
@@ -66,7 +71,26 @@ function App() {
 
   const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-  // fetch from Pexels
+  // --- URL routing helpers ---
+  const getTermFromPath = () => {
+    try {
+      const m = window.location.pathname.match(/^\/search\/(.+)$/);
+      return m ? decodeURIComponent(m[1]) : null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const pushSearchToUrl = (term) => {
+    try {
+      const newPath = `/search/${encodeURIComponent(term)}`;
+      if (window.location.pathname !== newPath) {
+        window.history.pushState({}, "", newPath);
+      }
+    } catch (e) {}
+  };
+
+  // --- fetch helpers ---
   const fetchData = useCallback(async (url) => {
     try {
       const r = await fetch(url, {
@@ -90,6 +114,7 @@ function App() {
       photographer: p.photographer,
       src: p.src,
       alt: p.alt || "",
+      // include original where available
       original: p.src.original || p.src.large,
     }));
     const videos = (videoData.videos || []).map((v) => ({
@@ -105,6 +130,7 @@ function App() {
     return shuffleArray([...photos, ...videos]);
   }, [fetchData]);
 
+  // --- get media and manage state ---
   const getSearchedMedia = useCallback(async (searchValue, index = 1, isAppending = false) => {
     if (!searchValue) return;
     setLoading(true);
@@ -126,15 +152,43 @@ function App() {
     }
   }, [fetchPhotosAndVideos]);
 
-  // Initial load
+  // initial load
   useEffect(() => {
+    setShowPreloader(false);
+    const termFromPath = getTermFromPath();
+    if (termFromPath) {
+      setSearchValueGlobal(termFromPath);
+      setPageIndex(1);
+      getSearchedMedia(termFromPath, 1);
+      return;
+    }
     const initialCats = ["Nature", "Space", "Forest"];
     const pick = initialCats[randInt(0, initialCats.length - 1)];
+    const page = randomizeOnLoad ? randInt(1, 5) : 1;
     setSearchValueGlobal(pick);
-    getSearchedMedia(pick, randInt(1, 3));
+    setTimeout(() => getSearchedMedia(pick, page), 150);
+  }, [getSearchedMedia, randomizeOnLoad]);
+
+  // back/forward
+  useEffect(() => {
+    const onPop = () => {
+      const term = getTermFromPath();
+      if (term) {
+        setSearchValueGlobal(term);
+        setPageIndex(1);
+        getSearchedMedia(term, 1);
+      } else {
+        const q = "Nature";
+        setSearchValueGlobal(q);
+        setPageIndex(1);
+        getSearchedMedia(q, 1);
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
   }, [getSearchedMedia]);
 
-  // Infinite scroll
+  // infinite scroll
   const handleObserver = useCallback((entries) => {
     const target = entries[0];
     if (target.isIntersecting && !loading && hasMore) {
@@ -152,15 +206,18 @@ function App() {
     return () => { if (cur) observer.unobserve(cur); };
   }, [handleObserver]);
 
-  // Theme toggle
+  // theme persistence
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("theme", theme);
   }, [theme]);
+
   const toggleTheme = () => setTheme(t => t === "light" ? "dark" : "light");
 
-  const toggleFavorite = (e, item) => {
-    e.stopPropagation();
+  // favorites handling
+  const toggleFavorite = useCallback((e, item) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
     setFavorites(prev => {
       const exists = prev.some(f => f.id === item.id);
       const updated = exists ? prev.filter(f => f.id !== item.id) : [item, ...prev];
@@ -168,140 +225,304 @@ function App() {
       setFavoriteCount(updated.length);
       return updated;
     });
-  };
+  }, []);
 
-  const handleDownload = async (e, url, name) => {
-    e.stopPropagation();
-    if (!url) return alert("No download link");
-    const res = await fetch(url);
-    const blob = await res.blob();
-    const blobUrl = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = `${name}-${Date.now()}.jpg`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
+  const isFavorited = useCallback((id) => favorites.some(f => f.id === id), [favorites]);
 
-  const RenderMedia = (items) => {
+  // download helper
+  const handleDownload = useCallback(async (e, url, name) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+    if (!url) return alert("Download url not available.");
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      const ext = (url.split(".").pop().split("?")[0] || "jpg").slice(0, 4);
+      a.download = `${name || "media"}-${Date.now()}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error("download failed", err);
+      alert("Download failed.");
+    }
+  }, []);
+
+  // render media grid items
+  const RenderMedia = useCallback((items) => {
     const filtered = items.filter(it => filterMode === "all" ? true : (filterMode === "photos" ? it.type === "photo" : it.type === "video"));
     return filtered.map(item => (
-      <div className="item" key={item.id} onClick={() => setModalItem(item)}>
+      <div className="item" key={item.id} onClick={() => setModalItem(item)} role="button" tabIndex={0}>
         {item.type === "photo" ? (
-          <img src={item.src.large} alt={item.alt} loading="lazy" />
+          <img src={item.src.large} alt={item.alt || item.photographer} loading="lazy" />
         ) : (
-          <video className="video-item" poster={item.src.large} muted>
-            <source src={item.src.original} type="video/mp4" />
-          </video>
+          <div className="video-wrapper">
+            <video className="video-item" poster={item.src.large} preload="metadata" muted>
+              <source src={item.src.original} type="video/mp4" />
+            </video>
+          </div>
         )}
         <div className="item-actions">
-          <button className="icon small" title="Download" onClick={(e) => handleDownload(e, item.src.original, item.photographer)}><FaDownload /></button>
-          <button className="icon small heart" onClick={(e) => toggleFavorite(e, item)}><FaHeart /></button>
+          <button className="icon small" title="Download" onClick={(e) => { e.stopPropagation(); handleDownload(e, item.type === "photo" ? (item.original || item.src.large) : item.src.original, item.photographer); }}>
+            <FaDownload />
+          </button>
+
+          <button className={`icon small heart ${isFavorited(item.id) ? "active" : ""}`} onClick={(e) => { e.stopPropagation(); toggleFavorite(e, item); }}>
+            <FaHeart />
+          </button>
         </div>
       </div>
     ));
-  };
+  }, [filterMode, handleDownload, isFavorited, toggleFavorite]);
+
+  const openCategory = useCallback((cat) => {
+    if (!cat) return;
+    pushSearchToUrl(cat);
+    setSearchValueGlobal(cat);
+    setPageIndex(1);
+    setShowFavorites(false);
+    getSearchedMedia(cat, randInt(1,5));
+    setSidebarOpen(false);
+  }, [getSearchedMedia]);
 
   const handleSearch = (e) => {
     e.preventDefault();
     const q = e.target.querySelector("input").value.trim();
     if (!q) return;
+    pushSearchToUrl(q);
     setSearchValueGlobal(q);
-    getSearchedMedia(q);
+    setPageIndex(1);
+    setShowFavorites(false);
+    getSearchedMedia(q, randInt(1, 5));
+    setSuggestions(prev => { const updated = [q, ...prev.filter(s => s !== q)].slice(0, 8); localStorage.setItem("recentSearches", JSON.stringify(updated)); return updated; });
     e.target.querySelector("input").value = "";
     setSidebarOpen(false);
   };
 
+  const closeModal = () => setModalItem(null);
+
+  const clearCache = () => {
+    Object.keys(localStorage).forEach(k => {
+      if (!["favorites", "theme", "recentSearches"].includes(k)) localStorage.removeItem(k);
+    });
+    alert("Cache cleared (favorites & theme preserved).");
+  };
+
+  // set document title & meta (replaced react-helmet)
+  useEffect(() => {
+    const title = searchValueGlobal
+      ? `${searchValueGlobal} Free Stock Photos & Videos | PirateRuler`
+      : "Free Stock Photos & Videos | PirateRuler";
+    document.title = title;
+
+    const setMeta = (name, content) => {
+      let el = document.querySelector(`meta[name="${name}"]`);
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute("name", name);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    };
+
+    setMeta("description", searchValueGlobal ? `Download high-quality ${searchValueGlobal} stock photos and videos — free and royalty-free from PirateRuler.` : "Download millions of free stock photos & videos. Explore Nature, Space, Travel, Japan and more on PirateRuler.");
+    setMeta("keywords", `${searchValueGlobal}, stock photos, stock videos, free downloads, PirateRuler`);
+    // og:url (optional)
+    let ogUrlEl = document.querySelector('meta[property="og:url"]');
+    if (!ogUrlEl) {
+      ogUrlEl = document.createElement("meta");
+      ogUrlEl.setAttribute("property", "og:url");
+      document.head.appendChild(ogUrlEl);
+    }
+    ogUrlEl.setAttribute("content", `https://stock.pirateruler.com/search/${encodeURIComponent(searchValueGlobal || "home")}`);
+  }, [searchValueGlobal]);
+
+  // render
   return (
     <>
-      {/* Sidebar Overlay */}
+      {/* Sidebar overlay */}
       <div className={`overlay ${sidebarOpen ? "show" : ""}`} onClick={() => setSidebarOpen(false)} />
 
       {/* Sidebar */}
-      <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
+      <aside className={`sidebar ${sidebarOpen ? "open" : ""}`} aria-hidden={!sidebarOpen}>
         <div className="sidebar-inner">
           <div className="sidebar-top">
-            <h2>PirateRuler</h2>
-            <button className="close-btn" onClick={() => setSidebarOpen(false)}><FaTimes /></button>
+            <div className="sidebar-title">
+              <h2>PirateRuler</h2>
+              <button className="close-btn" onClick={() => setSidebarOpen(false)} aria-label="Close menu"><FaTimes /></button>
+            </div>
+            <p className="sidebar-desc">Download photos & videos · 10M+ collection</p>
           </div>
 
           <nav className="sidebar-nav">
-            {PRIMARY_CATEGORIES.map(cat => (
-              <button key={cat} className="nav-item" onClick={() => getSearchedMedia(cat)}>{cat}</button>
-            ))}
+            <div className="cat-grid">
+              {PRIMARY_CATEGORIES.map(cat => (
+                <button key={cat} className="nav-item" onClick={() => openCategory(cat)}>
+                  {cat}
+                </button>
+              ))}
+            </div>
 
             <div className="more-block">
-              <button className="more-toggle" onClick={() => setShowMoreCats(s => !s)}>{showMoreCats ? "Hide ▲" : "Show more ▼"}</button>
-              {showMoreCats && MORE_CATEGORIES.map(cat => (
-                <button key={cat} className="nav-item" onClick={() => getSearchedMedia(cat)}>{cat}</button>
-              ))}
+              <button className="more-toggle" onClick={() => setShowMoreCats(s => !s)}>{showMoreCats ? "Hide categories ▲" : "Show more categories ▼"}</button>
+              {showMoreCats && (
+                <div className="more-list">
+                  {MORE_CATEGORIES.map(cat => (
+                    <button key={cat} className="nav-item" onClick={() => openCategory(cat)}>
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <a href="https://pirateruler.com" target="_blank" rel="noreferrer" className="pirateruler-link">PirateRuler.com</a>
 
-            <hr style={{ margin: "10px 0" }} />
-            <a href="https://www.pirateruler.com/post/about.html" target="_blank" rel="noreferrer">About</a><br />
-            <a href="https://www.pirateruler.com/post/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a><br />
-            <a href="https://www.pirateruler.com/post/contact.html" target="_blank" rel="noreferrer">Contact</a><br />
-            <a href="https://www.pirateruler.com/post/terms.html" target="_blank" rel="noreferrer">Terms</a>
+            <hr style={{ margin: "12px 0", borderColor: "#444" }} />
+
+            {/* Info & quick legal links in sidebar (added your pages) */}
+            <div className="sidebar-legal">
+              <h4 style={{ marginBottom: "8px" }}>Info & Legal</h4>
+              <p style={{ fontSize: "13px", color: "#aaa", lineHeight: "1.5" }}>
+                <strong>About:</strong> PirateRuler provides free stock photos and videos powered by third-party APIs. We create tools and sites across many categories.
+              </p>
+
+              <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                <a href="https://www.pirateruler.com/post/about.html" target="_blank" rel="noreferrer" style={{ color: "#9fb", fontSize: 13 }}>About</a>
+                <a href="https://www.pirateruler.com/post/privacy.html" target="_blank" rel="noreferrer" style={{ color: "#9fb", fontSize: 13 }}>Privacy Policy</a>
+                <a href="https://www.pirateruler.com/post/contact.html" target="_blank" rel="noreferrer" style={{ color: "#9fb", fontSize: 13 }}>Contact</a>
+                <a href="https://www.pirateruler.com/post/terms.html" target="_blank" rel="noreferrer" style={{ color: "#9fb", fontSize: 13 }}>Terms</a>
+              </div>
+
+              <p style={{ fontSize: "12px", color: "#777", marginTop: "10px" }}>
+                <strong>Disclaimer:</strong> Media are shown via Pexels (or similar) and follow their licenses.
+              </p>
+            </div>
           </nav>
 
           <div className="sidebar-controls">
-            <button className="theme-btn" onClick={toggleTheme}>{theme === "light" ? <FaMoon /> : <FaSun />} {theme === "light" ? "Dark" : "Light"}</button>
-            <button className="fav-btn" onClick={() => { setShowFavorites(true); setSidebarOpen(false); }}><FaHeart /> Favorites <span className="fav-count">{favoriteCount}</span></button>
+            <div className="control-row">
+              <button className="theme-btn" onClick={toggleTheme}>{theme === "light" ? <FaMoon /> : <FaSun />} &nbsp; {theme === "light" ? "Dark" : "Light"}</button>
+              <button className="fav-btn" onClick={() => { setShowFavorites(true); setSidebarOpen(false); }}><FaHeart /> &nbsp; Favorites <span className="fav-count">{favoriteCount}</span></button>
+            </div>
+
+            <div className="control-row">
+              <button className="cache-btn" onClick={clearCache}>Clear cache</button>
+            </div>
           </div>
-          <small>© {new Date().getFullYear()} PirateRuler</small>
+
+          <div className="sidebar-footer">
+            <small>© {new Date().getFullYear()} PirateRuler</small>
+          </div>
         </div>
       </aside>
 
-      {/* Header */}
+      {/* header */}
       <header className="header">
         <div className="left">
-          <button className="hamburger" onClick={() => setSidebarOpen(true)}><FaBars /></button>
-          <h1 className="brand">Stocks by <a href="https://pirateruler.com" target="_blank" rel="noreferrer">PirateRuler</a></h1>
+          <button className="hamburger" onClick={() => setSidebarOpen(true)} aria-label="Open menu"><FaBars /></button>
+          <h1 className="brand" onClick={() => { setShowFavorites(false); const q = "Nature"; setSearchValueGlobal(q); pushSearchToUrl(q); getSearchedMedia(q, randInt(1,5)); }}>
+            Stocks by <a href="https://pirateruler.com" target="_blank" rel="noreferrer">PirateRuler.com</a>
+          </h1>
         </div>
 
         <div className="center">
-          <form onSubmit={handleSearch} className="search-form">
-            <input name="q" placeholder="Search photos or videos..." />
-            <button type="submit"><IoSearch /></button>
+          <form onSubmit={handleSearch} className="search-form" role="search">
+            <input name="q" aria-label="Search photos or videos" placeholder="Search photos or videos..." />
+            <button type="submit" className="search-btn" aria-label="Search"><IoSearch /></button>
           </form>
 
           <div className="filter-row">
-            <button className={filterMode === "all" ? "active" : ""} onClick={() => setFilterMode("all")}>All</button>
-            <button className={filterMode === "photos" ? "active" : ""} onClick={() => setFilterMode("photos")}>Photos</button>
-            <button className={filterMode === "videos" ? "active" : ""} onClick={() => setFilterMode("videos")}>Videos</button>
+            <button className={`filter-btn ${filterMode === "all" ? "active" : ""}`} onClick={() => setFilterMode("all")}>All</button>
+            <button className={`filter-btn ${filterMode === "photos" ? "active" : ""}`} onClick={() => setFilterMode("photos")}>Photos</button>
+            <button className={`filter-btn ${filterMode === "videos" ? "active" : ""}`} onClick={() => setFilterMode("videos")}>Videos</button>
           </div>
         </div>
       </header>
 
-      {/* Main */}
+      {/* hero */}
+      <section className="hero">
+        <div className="hero-inner">
+          <h2>Download stock photos & videos</h2>
+          <p className="hero-desc">Over 20M+ free stock photos & videos (via Pexels & Pixabay). Search, preview and download — fresh results each visit.</p>
+
+          <div className="hero-ctas">
+            <button className="cta primary" onClick={() => openCategory("Nature")}>Explore Popular</button>
+            <button className="cta" onClick={() => openCategory("Trending")}>Trending</button>
+          </div>
+
+          <div className="hero-pills">
+            {PRIMARY_CATEGORIES.map(cat => <button key={cat} className="pill" onClick={() => openCategory(cat)}>{cat}</button>)}
+          </div>
+        </div>
+      </section>
+
+      {/* gallery */}
       <main className="main-content">
         <div className="container">
           <div className="gallery">
-            {noResults ? <div className="no-results">No results found</div> :
-              showFavorites ? RenderMedia(favorites) : RenderMedia(media)}
+            {noResults ? <div className="no-results">No media found for your search.</div>
+              : showFavorites ? (favorites.length > 0 ? RenderMedia(favorites) : <div className="no-results">No favorites yet — try exploring!</div>)
+              : RenderMedia(media)
+            }
           </div>
 
           <div ref={loader} style={{ height: 10 }} />
+
           {loading && <div className="loading"><BsGlobeCentralSouthAsia /> Loading...</div>}
         </div>
       </main>
 
-      {/* Normal footer */}
-      <footer className="site-footer">
-        <div className="container footer-inner">
-          <div>Powered by <a href="https://pirateruler.com">PirateRuler</a></div>
-          <div className="footer-links">
-            <a href="https://pirateruler.com">Main</a> •
-            <a href="https://www.pirateruler.com/post/about.html">About</a> •
-            <a href="https://www.pirateruler.com/post/privacy.html">Privacy</a> •
-            <a href="https://www.pirateruler.com/post/contact.html">Contact</a> •
-            <a href="https://www.pirateruler.com/post/terms.html">Terms</a>
+      {/* SMALL static footer (non-sticky). Appears when user reaches bottom. */}
+      <footer className="site-footer" style={{
+        padding: "8px 0",
+        borderTop: "1px solid rgba(255,255,255,0.03)",
+        marginTop: 24,
+        background: "transparent"
+      }}>
+        <div className="container footer-inner" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, fontSize: 13 }}>
+          <div style={{ color: "var(--muted-color, #9fb)" }}>© {new Date().getFullYear()} PirateRuler</div>
+          <div className="footer-links" style={{ color: "var(--muted-color, #9fb)" }}>
+            <a href="https://pirateruler.com" style={{ marginRight: 10, color: "inherit" }}>Main</a>
+            <a href="https://www.pirateruler.com/post/about.html" target="_blank" rel="noreferrer" style={{ marginRight: 10, color: "inherit" }}>About</a>
+            <a href="https://www.pirateruler.com/post/privacy.html" target="_blank" rel="noreferrer" style={{ marginRight: 10, color: "inherit" }}>Privacy</a>
+            <a href="https://www.pirateruler.com/post/contact.html" target="_blank" rel="noreferrer" style={{ marginRight: 10, color: "inherit" }}>Contact</a>
+            <a href="https://www.pirateruler.com/post/terms.html" target="_blank" rel="noreferrer" style={{ color: "inherit" }}>Terms</a>
           </div>
         </div>
       </footer>
+
+      {/* modal */}
+      {modalItem && (
+        <div className="modal" role="dialog" aria-modal="true">
+          <div className="modal-inner">
+            <button className="modal-close" onClick={closeModal}><FaTimes /></button>
+            <div className="modal-media">
+              {modalItem.type === "photo" ? (
+                <img src={modalItem.original || modalItem.src.large} alt={modalItem.alt || modalItem.photographer} />
+              ) : (
+                <video controls autoPlay>
+                  <source src={modalItem.src.original} type="video/mp4" />
+                </video>
+              )}
+            </div>
+
+            <div className="modal-info">
+              <h3>{modalItem.photographer}</h3>
+              {modalItem.alt && <p className="modal-desc">{modalItem.alt}</p>}
+
+              <div className="modal-actions">
+                <button className="cta" onClick={(e) => handleDownload(e, modalItem.type === "photo" ? (modalItem.original || modalItem.src.large) : modalItem.src.original, modalItem.photographer)}>Download</button>
+                <button className={`heart ${isFavorited(modalItem.id) ? "active" : ""}`} onClick={(e) => toggleFavorite(e, modalItem)}><FaHeart /></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
