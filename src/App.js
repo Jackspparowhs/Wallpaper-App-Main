@@ -391,7 +391,7 @@ function App() {
               )}
             </div>
 
-            <a href="https://pirateruler.com" target="_blank" rel="noreferrer" className="pirateruler-link">PirateRulers.com</a>
+            <a href="https://pirateruler.com" target="_blank" rel="noreferrer" className="pirateruler-link">PirateRuler.com</a>
 
             <hr style={{ margin: "12px 0", borderColor: "#444" }} />
 
